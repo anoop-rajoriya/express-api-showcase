@@ -1,7 +1,10 @@
 import express from "express"
 import {PORT, NODE_ENV} from "./config/env.config.js"
+import {connectMongoDB} from "./config/db.config.js"
 
 async function start() {
+    await connectMongoDB()
+    
     const app = express()
     app.use(express.json({ limit: "50kb" }))
     app.use(express.urlencoded({ limit: "50kb" }))
