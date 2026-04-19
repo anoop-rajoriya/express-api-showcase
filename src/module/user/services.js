@@ -1,7 +1,8 @@
-import {TOKEN_EXPIRY} from "../../config/env.config.js"
+import {TOKEN_EXPIRY, ACCESS_TOKEN_SECRET, REFRESH_TOKEN_SECRET} from "../../config/env.config.js"
 import {User} from "./model.js"
 import ApiError from "../../common/utils/ApiError.js"
 import {generateHash, compareHash, generateCode} from "../../common/utils/crypto.js"
+import {generateAccessToken, generateRefreshToken, verifyTokens} from "../../common/utils/token.js"
 
 export const registerUser = async({name, email, password})=>{
 // 1. first and last name saparation
@@ -37,7 +38,7 @@ export const registerUser = async({name, email, password})=>{
     return createdUser
 }
 
-export const verifyUser = ({userId, code})=>{
+export const verifyUserEmail = ({userId, code})=>{
     // 1. find user (Error: User not found)
     const user = await User.findById(userId).select("+verificationToken")
     if(!user) throw new Error("User not found")
@@ -59,3 +60,95 @@ export const verifyUser = ({userId, code})=>{
     return userId
 }
 
+export const resendVerificationCode = async({email})=>{
+    // 1. find user using email (Error: User not registred)
+    const user = await User.findOne({email}).select("+verificationToken")
+    if(!user) throw new Error("User not registred")
+
+    // 2. check is already verified (Success: User already veryfied)
+    if(user.isVerified){
+        return {message: "User already veryfied", code: null}
+    }
+
+    // 3. code exist and not expired send it
+    const {token=null, expiry} = user.verificationToken
+    const now = Date.now()
+    if(token && expiry >= now){
+        return {code: token, message: null}
+    }
+
+    // 4. generate new code & save into db
+    const newCode = generateCode()
+    const newExpiry = new Date(Date.now() + TOKEN_EXPIRY * 1000)
+    user.verificationToken = {token: newCode, expiry: newExpiry}
+    await user.save()
+
+    // 5. return code
+    return {code: newCode, message: null}
+}
+
+export const authenticateUser = ({email, password})=>{
+    // 1. find user by email (Error: User not registred)
+    const user = await User.findOne({email}).select("+password +refreshToken")
+    if(!user) throw new Error("User not registred")
+
+    // 2. compair password hashs (Error: Email or password invalid)
+    const isMatch = compareHash(password, user.password)
+    if(isMatch) throw new Error("Email or password invalid")
+
+    // 3. generate jwt tokens (access & refresh token)
+    const [accessToken, accessTokenExpiry] = generateAccessToken({userId: user._id, email: user.email, name: user.firstName})
+    const [refreshToken, refreshTokenExpiry] = generateRefreshToken({userId: user._id})
+
+    // 4. update in db with expiry
+    user.refreshToken = {token: refreshToken, expiry: refreshTokenExpiry}
+    await user.save()
+
+    // 5. return tokens
+    return {accessToken, refreshToken}
+}
+
+export const getUser = ({userId})=>{
+    // 1. find user (Error: User not found)
+    const user = await User.findById(userId)
+    // 2. return user details
+    return user
+}
+
+export const refreshUserTokens = ({refreshToken})=>{
+    // 1. varify token
+    const decoded = verifyTokens(refreshToken, REFRESH_TOKEN_SECRET)
+
+    // 2. find user and match token
+    const user = await User.findOne({_id: decoded.userId}).select("+refreshToken")
+    if(!user || user.refreshToken !== refreshToken){
+        throw new Error("Invalid refresh token")
+    }
+
+    // 3. check expiry
+    const now = new Date()
+    if(now > user.refreshToken.expiry){
+        throw new Error("Expired Token, please login")
+    }
+
+    // 4. generate new tokens
+    const [accessToken, accessTokenExpiry] = generateAccessToken({userId: user._id, email: user.email, name: user.firstName})
+    const [refreshToken, refreshTokenExpiry] = generateRefreshToken({userId: user._id})
+
+    // 5. update tokens in db
+    user.refreshToken = {token: refreshToken, expiry: refreshTokenExpiry}
+    await user.save()
+
+    // 6. return new tokens
+    return {accessToken, refreshToken}
+}
+
+export const logoutUser = ({userId})=>{
+    // 1. find user (Error: User not found)
+    // 2. delete tokens from db
+    const user = await User.findByIdAndUpdate(userId, {refreshToken: {token: undefined, expiry: undefined}})
+    if(!user) throw new Error("User not found")
+
+    // return user id (Success: User logged out successful)
+    return {userId: user._id, message: "User successfully logged out"}
+}
