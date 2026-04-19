@@ -10,7 +10,7 @@ router.get("/me", controllers.getProfileController)
 router.post("/refresh", controllers.refreshTokenController)
 router.post("/logout", controllers.logoutController)
 router.post("/forgot-password", controllers.forgotPasswordController)
-router.post("/new-password", controllers.updatePasswordController)
+router.post("/new-password", controllers.newPasswordController)
 router.patch("/change-password", controllers.changePasswordController)
 
 export default router
