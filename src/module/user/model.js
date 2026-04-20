@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import { ROLES } from "../../common/config/constant.js"
+import {hashPassword, comparePassword} from "../../common/utils/bcrypt.utils.js"
 
 const userSchema = new mongoose.Schema({
     firstName: {
@@ -56,5 +57,16 @@ const userSchema = new mongoose.Schema({
         expiry: { type: Date, select: false }
     }
 }, { timestamps: true })
+
+userSchema.pre("save", async(next)=>{
+    if(this.modified("password")){
+        this.password = await hashPassword(this.password)
+    }
+    return next()
+})
+
+userSchema.methods.comparePassword = async (passowrd)=>{
+    return await comparePassword(password, this.password)
+}
 
 export const User = mongoose.model("User", userSchema)
