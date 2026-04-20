@@ -26,7 +26,18 @@ export const getProfileController = async (req, res) => {
     return ApiResponse.ok(res, message, data)
 }
 
-export const refreshTokenController = async (req, res) => { }
+export const refreshTokenController = async (req, res) => {
+    const {message, data} = await userServices.refreshUserTokens(req.body)
+    
+    res.set("Authorization", `Bearer ${data.accessToken.token}`)
+
+    res.cookie("accessToken", data.accessToken.token, {
+        httpOnly: true,
+    })
+    
+    return ApiResponse.created(res, message, data)
+}
+
 export const logoutController = async (req, res) => { }
 export const forgotPasswordController = async (req, res) => { }
 export const newPasswordController = async (req, res) => { }

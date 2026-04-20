@@ -23,3 +23,9 @@ export class EmailVerifyDTO extends BaseDTO {
         code: joi.string().min(6).max(12).required()
     })
 }
+
+export class RefreshTokenDTO extends BaseDTO {
+    _schema = joi.object({
+        refreshToken: joi.string().required()
+    })
+}

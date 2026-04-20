@@ -15,8 +15,10 @@ router.post("/login", requestValidator(DTOs.LoginDTO), controllers.loginControll
 
 router.get("/me", authenticateUser(), authorizeUser([ROLES.USER, ROLES.ADMIN]), controllers.getProfileController)
 
-router.post("/refresh", controllers.refreshTokenController)
-router.post("/logout", controllers.logoutController)
+router.post("/refresh", requestValidator(DTOs.RefreshTokenDTO), controllers.refreshTokenController)
+
+router.post("/logout", authenticateUser(), controllers.logoutController)
+
 router.post("/forgot-password", controllers.forgotPasswordController)
 router.post("/new-password", controllers.newPasswordController)
 router.patch("/change-password", controllers.changePasswordController)

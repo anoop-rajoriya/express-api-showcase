@@ -112,33 +112,34 @@ export const getUser = async ({userId})=>{
     return {data: user, message: "User profile founded"}
 }
 
-// export const refreshUserTokens = async ({refreshToken})=>{
-//     // 1. varify token
-//     const decoded = verifyTokens(refreshToken, REFRESH_TOKEN_SECRET)
+export const refreshUserTokens = async ({refreshToken})=>{
+    // 1. varify token
+    const decoded = refreshToken.verify(refreshToken)
 
-//     // 2. find user and match token
-//     const user = await User.findOne({_id: decoded.userId}).select("+refreshToken")
-//     if(!user || user.refreshToken !== refreshToken){
-//         throw new Error("Invalid refresh token")
-//     }
+    // 2. find user and match token
+    const user = await User.findOne({_id: decoded.userId}).select("+refreshToken")
 
-//     // 3. check expiry
-//     const now = new Date()
-//     if(now > user.refreshToken.expiry){
-//         throw new Error("Expired Token, please login")
-//     }
+    if(!user || user.refreshToken !== refreshToken){
+        throw ApiError.badRequest("Invalid refresh token")
+    }
 
-//     // 4. generate new tokens
-//     const [accessToken, accessTokenExpiry] = generateAccessToken({userId: user._id, email: user.email, name: user.firstName})
-//     const [refreshToken, refreshTokenExpiry] = generateRefreshToken({userId: user._id})
+    // 3. check expiry
+    const now = new Date()
+    if(now > user.refreshToken.expiry){
+        throw ApiError.badRequest("Expired Token, please login")
+    }
 
-//     // 5. update tokens in db
-//     user.refreshToken = {token: refreshToken, expiry: refreshTokenExpiry}
-//     await user.save()
+    // 4. generate new tokens
+    const accessToken = accessToken.get({userId: user._id, email: user.email, name: user.firstName})
+    const refreshToken = refreshToken.get({userId: user._id})
 
-//     // 6. return new tokens
-//     return {accessToken, refreshToken}
-// }
+    // 5. update tokens in db
+    user.refreshToken = refreshToken
+    await user.save()
+
+    // 6. return new tokens
+    return {message: "Tokens successfully refreshed", data: {accessToken, refreshToken}}
+}
 
 // export const logoutUser = async ({userId})=>{
 //     // 1. find user (Error: User not found)
