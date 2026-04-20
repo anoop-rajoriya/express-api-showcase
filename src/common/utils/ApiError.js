@@ -1,24 +1,29 @@
 export default class ApiError extends Error {
-    constructor(message) {
+    constructor(message, status) {
         super(message)
+        this.status = status
         this.success = false
         this.operational = false
         Error.captureStackTrace(this, this.constructor)
     }
 
-    static badRequest(res, message = "invalid request formate") {
-        res.status(400).json(new ApiError(message))
+    static badRequest(message = "Invalid request formate") {
+        return new ApiError(message, 400)
     }
 
-    static unAuthorized(res, message = "authentication is required") {
-        res.status(401).json(new ApiError(message))
+    static unAuthorized(res, message = "Authentication is required") {
+        return new ApiError(message, 401)
     }
 
-    static forbidden(res, message = "unauthorized access") {
-        res.status(403).json(new ApiError(message))
+    static forbidden(res, message = "Unauthorized access") {
+        return new ApiError(message, 403)
     }
 
-    static notFound(res, message = "resources not found") {
-        res.status(405).json(new ApiError(message))
+    static notFound(res, message = "Resources not found") {
+        return new ApiError(message, 405)
+    }
+
+    static internalError(res, message = "Server internal error") {
+        return new ApiError(message, 500)
     }
 }
