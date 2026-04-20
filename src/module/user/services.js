@@ -102,15 +102,15 @@ export const authenticateUser = async ({email, password})=>{
     await user.save()
 
     // 5. return tokens
-    return {accessToken, refreshToken}
+    return {data: {accessToken, refreshToken}, message: "User authenticated successfully"}
 }
 
-// export const getUser = async ({userId})=>{
-//     // 1. find user (Error: User not found)
-//     const user = await User.findById(userId)
-//     // 2. return user details
-//     return user
-// }
+export const getUser = async ({userId})=>{
+    // 1. find user (Error: User not found)
+    const user = await User.findById(userId)
+    // 2. return user details
+    return {data: user, message: "User profile founded"}
+}
 
 // export const refreshUserTokens = async ({refreshToken})=>{
 //     // 1. varify token
