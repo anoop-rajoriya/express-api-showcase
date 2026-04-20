@@ -11,19 +11,19 @@ export default class ApiError extends Error {
         return new ApiError(message, 400)
     }
 
-    static unAuthorized(res, message = "Authentication is required") {
+    static unAuthorized(message = "Authentication is required") {
         return new ApiError(message, 401)
     }
 
-    static forbidden(res, message = "Unauthorized access") {
+    static forbidden(message = "Unauthorized access") {
         return new ApiError(message, 403)
     }
 
-    static notFound(res, message = "Resources not found") {
+    static notFound(message = "Resources not found") {
         return new ApiError(message, 405)
     }
 
-    static internalError(res, message = "Server internal error") {
+    static internalError(message = "Server internal error") {
         return new ApiError(message, 500)
     }
 }
