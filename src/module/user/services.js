@@ -141,15 +141,15 @@ export const refreshUserTokens = async ({refreshToken})=>{
     return {message: "Tokens successfully refreshed", data: {accessToken, refreshToken}}
 }
 
-// export const logoutUser = async ({userId})=>{
-//     // 1. find user (Error: User not found)
-//     // 2. delete tokens from db
-//     const user = await User.findByIdAndUpdate(userId, {refreshToken: {token: undefined, expiry: undefined}})
-//     if(!user) throw new Error("User not found")
+export const logoutUser = async (userId)=>{
+    // 1. find user (Error: User not found)
+    // 2. delete tokens from db
+    const user = await User.findByIdAndUpdate(userId, {refreshToken: {token: undefined, expiry: undefined}})
+    if(!user) throw new Error("User not found")
 
-//     // return user id (Success: User logged out successful)
-//     return {userId: user._id, message: "User successfully logged out"}
-// }
+    // return user id (Success: User logged out successful)
+    return {message: "User successfully logged out"}
+}
 
 // export const forgotUserPassword = async ({email})=>{
 //     // 1. find user by email (Error: Email not registred)

@@ -34,11 +34,15 @@ export const refreshTokenController = async (req, res) => {
     res.cookie("accessToken", data.accessToken.token, {
         httpOnly: true,
     })
-    
+
     return ApiResponse.created(res, message, data)
 }
 
-export const logoutController = async (req, res) => { }
+export const logoutController = async (req, res) => {
+    const {message} = await userServices.logoutUser(req.user._id)
+    return ApiResponse.ok(res, message)
+}
+
 export const forgotPasswordController = async (req, res) => { }
 export const newPasswordController = async (req, res) => { }
 export const changePasswordController = async (req, res) => { }
