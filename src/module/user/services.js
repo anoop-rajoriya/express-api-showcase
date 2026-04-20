@@ -38,7 +38,7 @@ export const registerUser = async({name, email, password})=>{
     return createdUser
 }
 
-export const verifyUserEmail = ({userId, code})=>{
+export const verifyUserEmail = async ({userId, code})=>{
     // 1. find user (Error: User not found)
     const user = await User.findById(userId).select("+verificationToken")
     if(!user) throw new Error("User not found")
@@ -87,7 +87,7 @@ export const resendVerificationCode = async({email})=>{
     return {code: newCode, message: null}
 }
 
-export const authenticateUser = ({email, password})=>{
+export const authenticateUser = async ({email, password})=>{
     // 1. find user by email (Error: User not registred)
     const user = await User.findOne({email}).select("+password +refreshToken")
     if(!user) throw new Error("User not registred")
@@ -108,14 +108,14 @@ export const authenticateUser = ({email, password})=>{
     return {accessToken, refreshToken}
 }
 
-export const getUser = ({userId})=>{
+export const getUser = async ({userId})=>{
     // 1. find user (Error: User not found)
     const user = await User.findById(userId)
     // 2. return user details
     return user
 }
 
-export const refreshUserTokens = ({refreshToken})=>{
+export const refreshUserTokens = async ({refreshToken})=>{
     // 1. varify token
     const decoded = verifyTokens(refreshToken, REFRESH_TOKEN_SECRET)
 
@@ -143,7 +143,7 @@ export const refreshUserTokens = ({refreshToken})=>{
     return {accessToken, refreshToken}
 }
 
-export const logoutUser = ({userId})=>{
+export const logoutUser = async ({userId})=>{
     // 1. find user (Error: User not found)
     // 2. delete tokens from db
     const user = await User.findByIdAndUpdate(userId, {refreshToken: {token: undefined, expiry: undefined}})
@@ -151,4 +151,71 @@ export const logoutUser = ({userId})=>{
 
     // return user id (Success: User logged out successful)
     return {userId: user._id, message: "User successfully logged out"}
+}
+
+export const forgotUserPassword = async ({email})=>{
+    // 1. find user by email (Error: Email not registred)
+    const user = await User.findOne({email}).select("+passwordToken")
+    if(!user) throw new Error("Email not registred")
+
+    // 2. generate forgot password code and expiry
+    const newCode = generateCode()
+    const newExpiry = new Date(Date.now() + TOKEN_EXPIRY * 1000)
+
+    // 3. update code in user entry
+    user.passwordToken = {token: newCode, expiry: newExpiry}
+    await user.save()
+
+    // 4. send code to registred email
+    // Todo for future
+
+    // 5. return userId (Success: Forgot password sent to email)
+    return {userId: user._id, message: "Forgot password sent to email"}
+}
+
+export const newUserPassword = async ({userId, code, password})=>{
+    // 1. find user by id (Error: user not found)
+    const user = await User.findById(userId).select("+passwordToken")
+    if(!user) 
+        throw new Error("User not found")
+    const {token, expiry} = user.passwordToken
+
+    // 2. compare password and check expiry (Error: code invalid or expired)
+    if(code !== token)
+        throw new Error("Invalid forgot password code")
+
+    const now = Date.now()
+    if(now > expiry)
+        throw new Error("Forgot password code expired")
+
+    // 3. generate password hash and update in user entry
+    const password_hash = generateHash(password)
+
+    user.password = password_hash
+    await user.save()
+
+    // 4. return userId (Success: New password added)
+    return {userId: user._id, message: "New password added"}
+}
+
+export const updateUserPassword = async ({userId, oldPassword, newPassword})=>{
+    // 1. find user by id (Error: User not found)
+    const user = await User.findById(userId).select("+password")
+    if(!user)
+        throw new Error("User not found")
+
+    // 2. compare old password (Error: Old password is incorrect)
+    const isMatch = compareHash(oldPassword, user.password)
+    if(!isMatch)
+        throw new Error("Old password is incorrect")
+
+    // 3. generate new password hash
+    const new_password_hash = generateHash(newPassword)
+
+    // 4. update password
+    user.password = new_password_hash
+    await user.save()
+
+    // 5. return userId (Success: Password updated with new password)
+    return {userId, message: "Password updated with new password"}
 }
