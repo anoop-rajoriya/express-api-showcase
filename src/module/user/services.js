@@ -2,18 +2,15 @@ import {User} from "./model.js"
 import ApiError from "../../common/utils/ApiError.js"
 import {getOTPToken, accessToken, refreshToken} from "../../common/utils/token.utils.js"
 
-export const registerUser = async({name, email, password})=>{
-// 1. first and last name saparation
-    const [firstName, lastName=undefined] = name.split(" ")
-
-// 2. check email existance (Error: Email already registered)
+export const registerUser = async({firstName, lastName, email, password})=>{
+// 1. check email existance (Error: Email already registered)
     const isExist = await User.findOne({email})
     if(isExist) throw ApiError.badRequest("Email already registred")
 
-// 3. generate varification code (1d)
+// 2. generate varification code (1d)
     const verificationToken = getOTPToken()
 
-// 4. create user entry with password_has & verification token
+// 3. create user entry with password_has & verification token
     const creaedUser = await User.create({
         firstName,
         lastName,
@@ -22,12 +19,15 @@ export const registerUser = async({name, email, password})=>{
         verificationToken
     })
 
-// 6. send verification email code (not implemented)
+// 4. send verification email code (not implemented)
 
-// 7. return user
-    return {userId: user._id, 
-        email, 
-        name, 
+// 5. return user
+    return {
+        data: {
+            userId: user._id, 
+            email, 
+            name
+        }, 
         message: "User registred successfully"
     }
 }
@@ -51,7 +51,8 @@ export const verifyUserEmail = async ({userId, code})=>{
     await user.save()
 
     // 5. return userId
-    return {userId: user._id, message: "User email verified successfully"}
+    return {data: {userId: user._id}, 
+    message: "User email verified successfully"}
 }
 
 export const resendVerificationCode = async({email})=>{
