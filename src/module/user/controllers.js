@@ -43,6 +43,17 @@ export const logoutController = async (req, res) => {
     return ApiResponse.ok(res, message)
 }
 
-export const forgotPasswordController = async (req, res) => { }
-export const newPasswordController = async (req, res) => { }
-export const changePasswordController = async (req, res) => { }
+export const forgotPasswordController = async (req, res) => {
+    const {message, data} = await userServices.forgotUserPassword(req.body)
+    return ApiResponse.ok(res, message, data)
+}
+
+export const resetPasswordController = async (req, res) => {
+    const {message, data} = await userServices.resetUserPassword(req.body)
+    return ApiResponse.ok(res, message, data)
+}
+
+export const updatePasswordController = async (req, res) => {
+    const {message} = await userServices.newUserPassword({...req.body, userId: req.user._id})
+    return ApiResponse.ok(res, message)
+}

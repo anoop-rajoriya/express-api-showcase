@@ -29,3 +29,24 @@ export class RefreshTokenDTO extends BaseDTO {
         refreshToken: joi.string().required()
     })
 }
+
+export class FogotPasswordDTO extends BaseDTO {
+    _schema = joi.object({
+        email: joi.string().email().required()
+    })
+}
+
+export class NewPasswordDTO extends BaseDTO {
+    _schema = joi.object({
+        password: joi.string().email().required(),
+        token: joi.string().min(3).max(12).required(),
+        userId: joi.string().required()
+    })
+}
+
+export class UpdatePasswordDTO extends BaseDTO {
+    _schema = joi.object({
+        oldPassword: joi.string().min(4).max(22).required(),
+        newPassword: joi.string().min(4).max(22).required(),
+    })
+}

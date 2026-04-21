@@ -17,10 +17,12 @@ router.get("/me", authenticateUser(), authorizeUser([ROLES.USER, ROLES.ADMIN]), 
 
 router.post("/refresh", requestValidator(DTOs.RefreshTokenDTO), controllers.refreshTokenController)
 
-router.post("/logout", authenticateUser(), controllers.logoutController)
+router.get("/logout", authenticateUser(), controllers.logoutController)
 
-router.post("/forgot-password", controllers.forgotPasswordController)
-router.post("/new-password", controllers.newPasswordController)
-router.patch("/change-password", controllers.changePasswordController)
+router.post("/forgot-password", requestValidator(DTOs.FogotPasswordDTO), controllers.forgotPasswordController)
+
+router.post("/new-password", requestValidator(DTOs.NewPasswordDTO), controllers.resetPasswordController)
+
+router.patch("/change-password", requestValidator(DTOs.UpdatePasswordDTO), authenticateUser(), controllers.updatePasswordController)
 
 export default router

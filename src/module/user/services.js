@@ -90,7 +90,7 @@ export const authenticateUser = async ({email, password})=>{
     if(!user) throw ApiError.notFound("User not registred")
 
     // 2. compair password hashs (Error: Email or password invalid)
-    const isMatch = await User.comparePassword(password)
+    const isMatch = await user.comparePassword(password)
     if(isMatch) throw ApiError.badRequest("Email or password invalid")
 
     // 3. generate jwt tokens (access & refresh token)
@@ -145,75 +145,70 @@ export const logoutUser = async (userId)=>{
     // 1. find user (Error: User not found)
     // 2. delete tokens from db
     const user = await User.findByIdAndUpdate(userId, {refreshToken: {token: undefined, expiry: undefined}})
-    if(!user) throw new Error("User not found")
+    if(!user) throw ApiError.notFound("User not found")
 
     // return user id (Success: User logged out successful)
     return {message: "User successfully logged out"}
 }
 
-// export const forgotUserPassword = async ({email})=>{
-//     // 1. find user by email (Error: Email not registred)
-//     const user = await User.findOne({email}).select("+passwordToken")
-//     if(!user) throw new Error("Email not registred")
+export const forgotUserPassword = async ({email})=>{
+    // 1. find user by email (Error: Email not registred)
+    const user = await User.findOne({email})
+    if(!user) throw ApiError.notFound("Email not registred")
 
-//     // 2. generate forgot password code and expiry
-//     const newCode = generateCode()
-//     const newExpiry = new Date(Date.now() + TOKEN_EXPIRY * 1000)
+    // 2. generate forgot password code and expiry
+    const token = getOTPToken()
 
-//     // 3. update code in user entry
-//     user.passwordToken = {token: newCode, expiry: newExpiry}
-//     await user.save()
+    // 3. update code in user entry
+    user.passwordToken = token
+    await user.save()
 
-//     // 4. send code to registred email
-//     // Todo for future
+    // 4. send code to registred email
+    // Todo for future
 
-//     // 5. return userId (Success: Forgot password sent to email)
-//     return {userId: user._id, message: "Forgot password sent to email"}
-// }
+    // 5. return userId (Success: Forgot password sent to email)
+    return {message: "Forgot password sent to email", data: {userId: user._id}}
+}
 
-// export const newUserPassword = async ({userId, code, password})=>{
-//     // 1. find user by id (Error: user not found)
-//     const user = await User.findById(userId).select("+passwordToken")
-//     if(!user) 
-//         throw new Error("User not found")
-//     const {token, expiry} = user.passwordToken
+export const resetUserPassword = async ({userId, token, password})=>{
+    // 1. find user by id (Error: user not found)
+    const user = await User.findById(userId).select("+passwordToken")
+    if(!user) 
+        throw ApiError.notFound("User not found")
 
-//     // 2. compare password and check expiry (Error: code invalid or expired)
-//     if(code !== token)
-//         throw new Error("Invalid forgot password code")
+    const passwordToken = user.passwordToken
 
-//     const now = Date.now()
-//     if(now > expiry)
-//         throw new Error("Forgot password code expired")
+    // 2. compare password and check expiry (Error: code invalid or expired)
+    if(token !== passwordToken.token)
+        throw ApiError.badRequest("Invalid forgot password token")
 
-//     // 3. generate password hash and update in user entry
-//     const password_hash = generateHash(password)
+    const now = Date.now()
+    if(now > expiry)
+        throw ApiError.badRequest("Forgot password code expired")
 
-//     user.password = password_hash
-//     await user.save()
+    // 3. update in user entry
+    user.password = password
+    await user.save()
 
-//     // 4. return userId (Success: New password added)
-//     return {userId: user._id, message: "New password added"}
-// }
+    // 4. return userId (Success: New password added)
+    return {data: {userId: user._id}, message: "Password successfully reset"}
+}
 
-// export const updateUserPassword = async ({userId, oldPassword, newPassword})=>{
-//     // 1. find user by id (Error: User not found)
-//     const user = await User.findById(userId).select("+password")
-//     if(!user)
-//         throw new Error("User not found")
+export const newUserPassword = async ({userId, oldPassword, newPassword})=>{
+    // 1. find user by id (Error: User not found)
+    const user = await User.findById(userId).select("+password")
+    if(!user)
+        throw ApiError.notFound("User not found")
 
-//     // 2. compare old password (Error: Old password is incorrect)
-//     const isMatch = compareHash(oldPassword, user.password)
-//     if(!isMatch)
-//         throw new Error("Old password is incorrect")
+    // 2. compare old password (Error: Old password is incorrect)
+    const isMatch = user.comparePassword(oldPassword)
+    if(!isMatch)
+        throw ApiError.badRequest("Old password is incorrect")
 
-//     // 3. generate new password hash
-//     const new_password_hash = generateHash(newPassword)
+    // 3. update password
+    user.password = newPassword
+    await user.save()
 
-//     // 4. update password
-//     user.password = new_password_hash
-//     await user.save()
-
-//     // 5. return userId (Success: Password updated with new password)
-//     return {userId, message: "Password updated with new password"}
-// }
+    // 4. return (Success: Password updated with new password)
+    return {message: "Password updated with new password"}
+}
