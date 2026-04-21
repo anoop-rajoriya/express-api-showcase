@@ -1,6 +1,6 @@
 export const ROLES = {
-    USER: "",
-    ADMIN: "",
+    USER: "user",
+    ADMIN: "admin",
 }
 
 export const TOKENS = {
